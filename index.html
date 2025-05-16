@@ -1,47 +1,325 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Live HTML Editor</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      display: flex;
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Full Featured Live Editor</title>
+<style>
+  :root {
+    --bg-light: #f0f0f0;
+    --bg-dark: #121212;
+    --text-light: #222;
+    --text-dark: #eee;
+    --accent: #4caf50;
+  }
+  body {
+    margin: 0; padding: 0; font-family: monospace, monospace;
+    background: var(--bg-light);
+    color: var(--text-light);
+    display: flex; flex-direction: column; height: 100vh;
+  }
+  body.dark {
+    background: var(--bg-dark);
+    color: var(--text-dark);
+  }
+  header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 20px;
+    background: var(--accent);
+    color: white;
+  }
+  header h1 {
+    margin: 0; font-weight: normal; font-size: 1.2rem;
+  }
+  .theme-toggle {
+    cursor: pointer;
+    background: transparent;
+    border: 2px solid white;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-weight: bold;
+  }
+  .editor-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 48px);
+  }
+  nav.tabs {
+    display: flex;
+    background: #ddd;
+  }
+  nav.tabs.dark {
+    background: #222;
+  }
+  nav.tabs button {
+    flex: 1;
+    padding: 10px;
+    cursor: pointer;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    font-weight: bold;
+    transition: background 0.3s, border-bottom-color 0.3s;
+  }
+  nav.tabs button:hover {
+    background: #eee;
+  }
+  nav.tabs.dark button:hover {
+    background: #333;
+  }
+  nav.tabs button.active {
+    border-bottom-color: var(--accent);
+    background: white;
+  }
+  nav.tabs.dark button.active {
+    background: #121212;
+  }
+  textarea {
+    flex: 1;
+    padding: 10px;
+    font-family: monospace;
+    font-size: 14px;
+    border: none;
+    resize: none;
+    background: white;
+    color: black;
+  }
+  body.dark textarea {
+    background: #1e1e1e;
+    color: #ddd;
+  }
+  .controls {
+    display: flex;
+    padding: 8px 10px;
+    gap: 10px;
+    background: #eee;
+    border-top: 1px solid #ccc;
+  }
+  body.dark .controls {
+    background: #222;
+    border-top: 1px solid #444;
+  }
+  button.control-btn {
+    cursor: pointer;
+    padding: 6px 12px;
+    background: var(--accent);
+    border: none;
+    color: white;
+    font-weight: bold;
+    border-radius: 4px;
+    user-select: none;
+  }
+  iframe#preview {
+    flex: 1;
+    border: none;
+    width: 100%;
+  }
+  .bottom-container {
+    display: flex;
+    flex-direction: column;
+    height: 50vh;
+    border-top: 1px solid #ccc;
+  }
+  body.dark .bottom-container {
+    border-top-color: #444;
+  }
+  .editors {
+    flex: 1;
+    display: flex;
+  }
+  .editors textarea {
+    flex: 1;
+    border-right: 1px solid #ccc;
+  }
+  body.dark .editors textarea {
+    border-right-color: #444;
+  }
+  .editors textarea:last-child {
+    border-right: none;
+  }
+
+  @media (max-width: 600px) {
+    .editors {
       flex-direction: column;
-      height: 100vh;
-      margin: 0;
     }
-    textarea {
-      width: 100%;
-      height: 30vh;
-      font-family: monospace;
-      padding: 10px;
-      box-sizing: border-box;
-      border: none;
-      border-bottom: 2px solid #ccc;
+    .editors textarea {
+      border-right: none;
+      border-bottom: 1px solid #ccc;
+      height: 33vh;
     }
-    iframe {
-      flex: 1;
-      width: 100%;
-      border: none;
+    .editors textarea:last-child {
+      border-bottom: none;
     }
-  </style>
+  }
+</style>
 </head>
 <body>
-  <textarea id="htmlInput" placeholder="Type your HTML code here..."></textarea>
-  <iframe id="preview"></iframe>
+<header>
+  <h1>Full Featured Live Editor</h1>
+  <button class="theme-toggle" id="themeToggle">Dark Mode</button>
+</header>
 
-  <script>
-    const textarea = document.getElementById('htmlInput');
-    const preview = document.getElementById('preview');
+<div class="editor-container">
+  <nav class="tabs" id="tabButtons">
+    <button data-tab="html" class="active">HTML</button>
+    <button data-tab="css">CSS</button>
+    <button data-tab="js">JavaScript</button>
+  </nav>
 
-    function updatePreview() {
-      preview.srcdoc = textarea.value;
+  <div class="editors">
+    <textarea id="htmlInput" placeholder="Write HTML here..."></textarea>
+    <textarea id="cssInput" placeholder="Write CSS here..." style="display:none;"></textarea>
+    <textarea id="jsInput" placeholder="Write JavaScript here..." style="display:none;"></textarea>
+  </div>
+
+  <div class="controls">
+    <button class="control-btn" id="saveBtn">💾 Save</button>
+    <button class="control-btn" id="loadBtn">📂 Load</button>
+    <button class="control-btn" id="clearBtn">🧹 Clear</button>
+    <button class="control-btn" id="downloadBtn">⬇️ Download</button>
+  </div>
+
+  <div class="bottom-container">
+    <iframe id="preview" sandbox="allow-scripts allow-same-origin"></iframe>
+  </div>
+</div>
+
+<script>
+  const themeToggle = document.getElementById('themeToggle');
+  const body = document.body;
+  const tabs = document.querySelectorAll('nav.tabs button');
+  const htmlInput = document.getElementById('htmlInput');
+  const cssInput = document.getElementById('cssInput');
+  const jsInput = document.getElementById('jsInput');
+  const preview = document.getElementById('preview');
+  const saveBtn = document.getElementById('saveBtn');
+  const loadBtn = document.getElementById('loadBtn');
+  const clearBtn = document.getElementById('clearBtn');
+  const downloadBtn = document.getElementById('downloadBtn');
+
+  // Theme toggle
+  function updateTheme() {
+    if (body.classList.contains('dark')) {
+      themeToggle.textContent = 'Light Mode';
+      localStorage.setItem('editorTheme', 'dark');
+    } else {
+      themeToggle.textContent = 'Dark Mode';
+      localStorage.setItem('editorTheme', 'light');
     }
+  }
+  themeToggle.addEventListener('click', () => {
+    body.classList.toggle('dark');
+    updateTheme();
+  });
+  // Load saved theme
+  if (localStorage.getItem('editorTheme') === 'dark') {
+    body.classList.add('dark');
+  }
+  updateTheme();
 
-    textarea.addEventListener('input', updatePreview);
-    window.addEventListener('load', updatePreview);
-  </script>
+  // Tab switching
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      htmlInput.style.display = 'none';
+      cssInput.style.display = 'none';
+      jsInput.style.display = 'none';
+      if (tab.dataset.tab === 'html') htmlInput.style.display = 'block';
+      else if (tab.dataset.tab === 'css') cssInput.style.display = 'block';
+      else if (tab.dataset.tab === 'js') jsInput.style.display = 'block';
+    });
+  });
+
+  function updatePreview() {
+    const combined = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<style>
+${cssInput.value}
+</style>
+</head>
+<body>
+${htmlInput.value}
+<script>
+${jsInput.value}
+<\/script>
+</body>
+</html>`;
+    preview.srcdoc = combined;
+  }
+
+  // Auto update preview on input
+  [htmlInput, cssInput, jsInput].forEach(el => {
+    el.addEventListener('input', updatePreview);
+  });
+
+  // Save/load/clear in localStorage
+  function saveCode() {
+    localStorage.setItem('htmlCode', htmlInput.value);
+    localStorage.setItem('cssCode', cssInput.value);
+    localStorage.setItem('jsCode', jsInput.value);
+    alert('Code saved!');
+  }
+  function loadCode() {
+    const h = localStorage.getItem('htmlCode');
+    const c = localStorage.getItem('cssCode');
+    const j = localStorage.getItem('jsCode');
+    if (h !== null || c !== null || j !== null) {
+      htmlInput.value = h || '';
+      cssInput.value = c || '';
+      jsInput.value = j || '';
+      updatePreview();
+      alert('Code loaded!');
+    } else {
+      alert('No saved code found.');
+    }
+  }
+  function clearCode() {
+    if (confirm('Clear all code?')) {
+      htmlInput.value = '';
+      cssInput.value = '';
+      jsInput.value = '';
+      updatePreview();
+    }
+  }
+
+  // Download combined file
+  function downloadCode() {
+    const combined = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<style>
+${cssInput.value}
+</style>
+</head>
+<body>
+${htmlInput.value}
+<script>
+${jsInput.value}
+<\/script>
+</body>
+</html>`;
+    const blob = new Blob([combined], { type: 'text/html' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'my-code.html';
+    a.click();
+  }
+
+  saveBtn.addEventListener('click', saveCode);
+  loadBtn.addEventListener('click', loadCode);
+  clearBtn.addEventListener('click', clearCode);
+  downloadBtn.addEventListener('click', downloadCode);
+
+  // Initial preview update
+  updatePreview();
+</script>
 </body>
 </html>
